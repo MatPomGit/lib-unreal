@@ -2,26 +2,29 @@
   "schema_version": 1,
   "template_version": "1.0.0",
   "type": "lib",
-  "component_id": "REPLACE_LIB_ID",
-  "display_name": "REPLACE_LIB_TITLE",
+  "component_id": "lib-unreal",
+  "display_name": "Unreal Engine MCP Adapter",
   "version": "0.1.0",
-  "release_status": "scaffold",
-  "owner": "REPLACE_OWNER",
-  "license_spdx": "UNDECIDED",
-  "language": "REPLACE_LANGUAGE",
-  "distribution_kind": "unselected",
-  "package_identifier": "REPLACE_PACKAGE_ID",
+  "release_status": "development",
+  "owner": "MatPomGit",
+  "license_spdx": "MIT",
+  "language": "Python",
+  "distribution_kind": "python-wheel",
+  "package_identifier": "lib_unreal",
   "source_paths": [
-    "src"
+    "src/lib_unreal"
   ],
   "api_contract": "contracts/api.json",
   "dependencies": [],
   "peer_dependencies": [],
   "consumers": [],
-  "supported_platforms": [],
+  "supported_platforms": [
+    "Windows",
+    "Linux"
+  ],
   "compatibility": [],
-  "repository_url": "REPLACE_REPOSITORY_URL",
-  "documentation_url": "REPLACE_DOCS_URL",
+  "repository_url": "https://github.com/MatPomGit/lib-unreal",
+  "documentation_url": "https://github.com/MatPomGit/lib-unreal#readme",
   "published_package_url": null,
   "dependency_lockfiles": []
 }
