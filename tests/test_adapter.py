@@ -61,16 +61,16 @@ class MCPClientTests(unittest.TestCase):
             client.list_tools()
 
     def test_sse_ignores_heartbeat_and_other_request_id(self):
-        events = (b": ping\\n\\n"
-                  b"data: {\\"jsonrpc\\":\\"2.0\\",\\"id\\":88,\\"result\\":{}}\\n\\n"
-                  b"event: message\\n"
-                  b"data: {\\"jsonrpc\\":\\"2.0\\",\\"id\\":1,\\"result\\":{\\"tools\\":[]}}\\n\\n")
+        events = (b": ping\n\n"
+                  b"data: {\"jsonrpc\":\"2.0\",\"id\":88,\"result\":{}}\n\n"
+                  b"event: message\n"
+                  b"data: {\"jsonrpc\":\"2.0\",\"id\":1,\"result\":{\"tools\":[]}}\n\n")
         response = io.BytesIO(events)
         self.assertEqual(UnrealMCP._read_sse(response, 1)["id"], 1)
 
     def test_sse_rejects_incomplete_or_oversized_events(self):
         with self.assertRaises(MCPError):
-            UnrealMCP._read_sse(io.BytesIO(b": keepalive\\n\\n"), 1)
+            UnrealMCP._read_sse(io.BytesIO(b": keepalive\n\n"), 1)
         with self.assertRaises(MCPError):
             UnrealMCP._read_sse(io.BytesIO(b"data: " + b"x" * (1024 * 1024 + 1)), 1)
 
