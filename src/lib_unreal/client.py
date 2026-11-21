@@ -16,14 +16,15 @@ def validate_endpoint(endpoint):
     parsed = urlsplit(endpoint)
     if (parsed.scheme != "http" or parsed.hostname not in
             {"127.0.0.1", "localhost", "::1"} or parsed.username or
-            parsed.password or parsed.fragment or not parsed.path.startswith("/")):
+            parsed.password or parsed.fragment or parsed.query or
+            not parsed.path.startswith("/")):
         raise ValueError("MCP endpoint must be HTTP on loopback without credentials")
     try:
         port = parsed.port
     except ValueError as exc:
         raise ValueError("Invalid MCP port") from exc
-    if port is None:
-        raise ValueError("Explicit MCP port required")
+    if port is None or port < 1:
+        raise ValueError("Valid explicit MCP port required")
     return endpoint
 
 
@@ -44,6 +45,31 @@ class UnrealMCP:
         self._sequence = 0
         self._session_id = None
 
+    @staticmethod
+    def _read_sse(response, expected_id):
+        """Read complete SSE events; ignore comments and unrelated JSON-RPC ids."""
+        used = 0
+        fields = []
+        while True:
+            line = response.readline(MAX_RESPONSE - used + 1)
+            used += len(line)
+            if used > MAX_RESPONSE:
+                raise MCPError("MCP SSE response exceeds byte limit")
+            if not line:
+                break
+            if line in (b"\\n", b"\\r\\n"):
+                if fields:
+                    try:
+                        event = json.loads(b"\\n".join(fields))
+                    except (ValueError, UnicodeError) as exc:
+                        raise MCPError("Malformed MCP SSE event JSON") from exc
+                    if isinstance(event, dict) and event.get("id") == expected_id:
+                        return event
+                    fields = []
+            elif line.startswith(b"data:"):
+                fields.append(line[5:].strip())
+        raise MCPError("MCP SSE stream ended without the requested response")
+
     def _post(self, message):
         headers = {
             "Content-Type": "application/json",
@@ -54,38 +80,30 @@ class UnrealMCP:
             headers["Mcp-Session-Id"] = self._session_id
         payload = json.dumps(message, separators=(",", ":")).encode("utf-8")
         req = request.Request(self.endpoint, payload, headers, method="POST")
-        opener = request.build_opener(_NoRedirect())
+        # Do not trust HTTP(S)_PROXY or NO_PROXY for loopback MCP requests.
+        opener = request.build_opener(request.ProxyHandler({}), _NoRedirect())
         try:
             with opener.open(req, timeout=self.timeout) as response:
                 session = response.headers.get("Mcp-Session-Id")
                 if session:
                     self._session_id = session
                 if response.status == 202:
+                    if "id" in message:
+                        raise MCPError("MCP request unexpectedly returned 202")
                     return {}
                 content_type = response.headers.get("Content-Type", "")
                 if "text/event-stream" in content_type:
-                    parts = []
-                    used = 0
-                    while used < MAX_RESPONSE:
-                        line = response.readline(MAX_RESPONSE - used + 1)
-                        used += len(line)
-                        if not line:
-                            break
-                        if len(line) + used > MAX_RESPONSE:
-                            raise MCPError("MCP response too large")
-                        if line.strip() == b"" and parts:
-                            break
-                        if line.startswith(b"data:"):
-                            parts.append(line[5:].strip())
-                    if not parts:
-                        raise MCPError("MCP SSE message missing data")
-                    raw = b"\n".join(parts)
-                else:
-                    raw = response.read(MAX_RESPONSE + 1)
+                    return self._read_sse(response, message.get("id"))
+                if "application/json" not in content_type:
+                    raise MCPError("Unexpected MCP response content type")
+                raw = response.read(MAX_RESPONSE + 1)
                 if len(raw) > MAX_RESPONSE:
-                    raise MCPError("MCP response too large")
-                return json.loads(raw)
-        except (OSError, ValueError, error.HTTPError) as exc:
+                    raise MCPError("MCP response exceeds byte limit")
+                try:
+                    return json.loads(raw)
+                except (ValueError, UnicodeError) as exc:
+                    raise MCPError("Malformed MCP JSON response") from exc
+        except OSError as exc:
             raise MCPError(f"MCP transport failed: {exc}") from exc
 
     def _rpc(self, method, params=None):
