@@ -57,10 +57,10 @@ class UnrealMCP:
                 raise MCPError("MCP SSE response exceeds byte limit")
             if not line:
                 break
-            if line in (b"\\n", b"\\r\\n"):
+            if line in (b"\n", b"\r\n"):
                 if fields:
                     try:
-                        event = json.loads(b"\\n".join(fields))
+                        event = json.loads(b"\n".join(fields))
                     except (ValueError, UnicodeError) as exc:
                         raise MCPError("Malformed MCP SSE event JSON") from exc
                     if isinstance(event, dict) and event.get("id") == expected_id:
