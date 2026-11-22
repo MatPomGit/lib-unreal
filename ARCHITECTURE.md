@@ -1,7 +1,25 @@
 # Architektura lib-unreal
 
-`src/lib_unreal/client.py` realizuje minimalny klient JSON-RPC 2.0 dla Streamable HTTP MCP. Działający edytor Unreal pozostaje właścicielem serwera MCP i narzędzi z Toolset Registry. Adapter nie uruchamia drugiego serwera, nie przechowuje poświadczeń ani nie wywołuje operacji mutujących.
+`src/lib_unreal/client.py` udostępnia lokalny odczytowy adapter
+JSON-RPC MCP dla Unreal Editor. Obsługuje `initialize`,
+`notifications/initialized` i `tools/list` z JSON/SSE,
+bez `tools/call`, narzędzi mutujących i serwera pośredniczącego.
 
-Wejście: lokalny endpoint HTTP. Wyjście: opis serwera i lista narzędzi MCP (ewentualnie metanarzędzi wyszukiwania) w JSON. Obsługa: `initialize`, `notifications/initialized`, `tools/list`; sesja przez `Mcp-Session-Id`, ograniczone odpowiedzi JSON/SSE, paginacja.
+**Granice:** literalne `127.0.0.1` lub `[::1]`, port wymagany,
+HTTP bez proxy i redirectów. `localhost` nie jest akceptowany,
+aby uniknąć zależności od DNS/hosts. Sesja `Mcp-Session-Id`
+pozostaje w pamięci. Timeout 10 s, maksymalnie 60 s.
 
-Granice: tylko loopback, brak automatycznych przekierowań, timeout 10 s, limit odpowiedzi 1 MiB. Zmiana scen wymaga kolejnego, osobno testowanego adaptera write z kontrolą dozwolonego projektu i polityką Research Autopilot. Protokół zainicjowany według MCP 2025-06-18; zgodność z wersją serwera wymaga weryfikacji na urządzeniu.
+**Limity:** 1 MiB na odpowiedź, do 32 stron paginacji,
+2048 narzędzi i 2 MiB łącznie. Serwer musi zaakceptować
+wersję `2025-06-18`; niekompatybilne negocjowanie kończy się
+wyjątkiem. Nie ma implementacji operacji write.
+
+**Dowody:** syntetyczne testy JSON-RPC/SSE, timeoutów, odmowy
+przekierowań i kontroli granic w izolowanym CI. Testy na
+rzeczywistym Unreal Editor/Andromedzie **NOT_RUN**.
+Architektura nie zapewnia uwierzytelnienia procesu nasłuchującego
+ani bezpieczeństwa innych procesów lokalnych.
+
+Szczegóły: [model zagrożeń](docs/security/threat-model.md),
+[przepływ danych](docs/architecture/data-flow.md).
