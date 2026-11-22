@@ -6,6 +6,9 @@ from urllib.parse import urlsplit
 DEFAULT_ENDPOINT = "http://127.0.0.1:8000/mcp"
 PROTOCOL_VERSION = "2025-06-18"
 MAX_RESPONSE = 1024 * 1024
+MAX_PAGES = 32
+MAX_TOOLS = 2048
+MAX_TOTAL_BYTES = 2 * 1024 * 1024
 
 
 class MCPError(RuntimeError):
@@ -15,7 +18,7 @@ class MCPError(RuntimeError):
 def validate_endpoint(endpoint):
     parsed = urlsplit(endpoint)
     if (parsed.scheme != "http" or parsed.hostname not in
-            {"127.0.0.1", "localhost", "::1"} or parsed.username or
+            {"127.0.0.1", "::1"} or parsed.username or
             parsed.password or parsed.fragment or parsed.query or
             not parsed.path.startswith("/")):
         raise ValueError("MCP endpoint must be HTTP on loopback without credentials")
@@ -38,7 +41,7 @@ class UnrealMCP:
 
     def __init__(self, endpoint=DEFAULT_ENDPOINT, timeout=10, transport=None):
         self.endpoint = validate_endpoint(endpoint)
-        if timeout <= 0 or timeout > 60:
+        if isinstance(timeout, bool) or not isinstance(timeout, (int, float)) or not 0 < timeout <= 60:
             raise ValueError("timeout must be in (0, 60] seconds")
         self.timeout = timeout
         self.transport = transport or self._post
@@ -128,7 +131,7 @@ class UnrealMCP:
             "capabilities": {},
             "clientInfo": {"name": "lib-unreal", "version": "0.1.0"},
         })
-        if not isinstance(result, dict) or not result.get("protocolVersion"):
+        if not isinstance(result, dict) or result.get("protocolVersion") != PROTOCOL_VERSION:
             raise MCPError("Invalid MCP initialization result")
         self.transport({"jsonrpc": "2.0", "method": "notifications/initialized"})
         return result
@@ -137,15 +140,23 @@ class UnrealMCP:
         tools = []
         cursor = None
         seen = set()
-        while True:
+        total_bytes = 0
+        for page in range(MAX_PAGES):
             params = {"cursor": cursor} if cursor else {}
             result = self._rpc("tools/list", params)
             if not isinstance(result, dict) or not isinstance(result.get("tools"), list):
                 raise MCPError("Invalid MCP tools/list result")
-            tools.extend(result["tools"])
+            page_tools = result["tools"]
+            if len(tools) + len(page_tools) > MAX_TOOLS:
+                raise MCPError("MCP tool count exceeds limit")
+            total_bytes += len(json.dumps(result, ensure_ascii=False).encode("utf-8"))
+            if total_bytes > MAX_TOTAL_BYTES:
+                raise MCPError("MCP paginated responses exceed cumulative byte limit")
+            tools.extend(page_tools)
             cursor = result.get("nextCursor")
             if not cursor:
                 return tools
             if not isinstance(cursor, str) or cursor in seen:
                 raise MCPError("Invalid or repeated MCP pagination cursor")
             seen.add(cursor)
+        raise MCPError("MCP pagination exceeds page limit")
