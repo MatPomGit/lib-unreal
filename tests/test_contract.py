@@ -34,7 +34,7 @@ class ContractTests(unittest.TestCase):
     def test_release_is_closed_by_default(self):
         errors = check(self.repo, "release")
         self.assertIn("GATE BLOCKED: tests_executed", errors)
-        self.assertIn("LICENSE: placeholder has not been replaced", errors)
+        self.assertNotIn("LICENSE: placeholder has not been replaced", errors)
         self.assertIn("MISSING RELEASE ARTIFACT", errors)
 
     def test_missing_file_fails_closed(self):

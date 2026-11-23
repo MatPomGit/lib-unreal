@@ -1,0 +1,15 @@
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "lib-unreal"
+version = "0.1.0"
+description = "Bezpośrednia, tylko-do-odczytu integracja z lokalnym Unreal MCP (HTTP Streamable)."
+requires-python = ">=3.11"
+license = {text = "MIT"}
+authors = [{name = "Mateusz Pomianek"}]
+dependencies = []
+
+[tool.setuptools.packages.find]
+where = ["src"]

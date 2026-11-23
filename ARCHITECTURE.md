@@ -1,19 +1,25 @@
-# Architektura biblioteki
+# Architektura lib-unreal
 
-**Status:** szablon nie zawiera gotowego produktu. Identyfikatory i komponenty należy zdefiniować przed implementacją.
+`src/lib_unreal/client.py` udostępnia lokalny odczytowy adapter
+JSON-RPC MCP dla Unreal Editor. Obsługuje `initialize`,
+`notifications/initialized` i `tools/list` z JSON/SSE,
+bez `tools/call`, narzędzi mutujących i serwera pośredniczącego.
 
-- **Source of truth:** to repozytorium jest jedynym właścicielem kodu i publicznego kontraktu.
-- **Upstream:** zależności przypięte do wersji i SHA/digest; aktualność sprawdzana przez Research Autopilot.
-- **Downstream:** `msc-*` i inne narzędzia odwołują się do wydania lub ustalonego SHA, nie kopiują źródeł.
-- **Boundary:** adaptery sprzętowe, rendering i I/O oddzielone od logiki domenowej, gdy dotyczy.
-- **Reproduce:** zdefiniowany lockfile, wersje zależności i parametry.
-- **Audit live:** odczyt aktualnego HEAD i porównanie z przypiętym SHA. Zmiany via PR, bez cichego nadpisywania.
+**Granice:** literalne `127.0.0.1` lub `[::1]`, port wymagany,
+HTTP bez proxy i redirectów. `localhost` nie jest akceptowany,
+aby uniknąć zależności od DNS/hosts. Sesja `Mcp-Session-Id`
+pozostaje w pamięci. Timeout 10 s, maksymalnie 60 s.
 
-Pełne kontrakty i macierz środowisk opisano w `docs/` i `config/component.json`.
+**Limity:** 1 MiB na odpowiedź, do 32 stron paginacji,
+2048 narzędzi i 2 MiB łącznie. Serwer musi zaakceptować
+wersję `2025-06-18`; niekompatybilne negocjowanie kończy się
+wyjątkiem. Nie ma implementacji operacji write.
 
+**Dowody:** syntetyczne testy JSON-RPC/SSE, timeoutów, odmowy
+przekierowań i kontroli granic w izolowanym CI. Testy na
+rzeczywistym Unreal Editor/Andromedzie **NOT_RUN**.
+Architektura nie zapewnia uwierzytelnienia procesu nasłuchującego
+ani bezpieczeństwa innych procesów lokalnych.
 
-## Dokumentacja rozwijanej biblioteki
-
-Po powstaniu kodu opisz **realne** moduły, publiczne API, wersje ABI, granice I/O i adaptery w [components](docs/architecture/components.md), [data-flow](docs/architecture/data-flow.md) i [distribution](docs/architecture/distribution.md). [ADR](docs/adr/README.md) zapisują uzasadnienia decyzji, a [model zagrożeń](docs/security/threat-model.md) rzeczywiste ryzyka i dowody ich kontroli.
-
-Publikacja dokumentacji jako GitHub Pages korzysta **wyłącznie** z `pages/`, nigdy z `docs/` ([polityka](docs/pages.md)). Brak wdrożonej funkcji oznacza stan `NOT_IMPLEMENTED`, a nie domyślny `PASS`.
+Szczegóły: [model zagrożeń](docs/security/threat-model.md),
+[przepływ danych](docs/architecture/data-flow.md).

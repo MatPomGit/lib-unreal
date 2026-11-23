@@ -1,34 +1,23 @@
-# REPLACE_LIB_TITLE
+# lib-unreal
 
-**Rodzaj:** `lib-*` · **Etap:** scaffold · **API:** eksperymentalne, niewydane.  
-**Autor podstawowy:** Mateusz Pomianek; opcjonalni współautorzy po potwierdzeniu wkładu.
+Biblioteka Python do lokalnego wykrywania możliwości **Unreal Engine MCP**. Wersja rozwojowa: API eksperymentalne, brak wydania. Nie wymaga konta Claude ani dodatkowych usług.
 
-Repozytorium definiuje jeden komponent wielokrotnego użytku, z jawnie wersjonowanym kontraktem.
-Warto tworzyć osobną bibliotekę dopiero, gdy istnieje rzeczywiste współużycie albo niezależny cykl życia i wersjonowania.
+## Zakres wersji rozwojowej
 
-## Publiczny interfejs
+Klient łączy się wyłącznie z `http://127.0.0.1:<port>/mcp`, wykonuje `initialize`, wysyła `notifications/initialized` i odczytuje `tools/list` z obsługą paginacji. Nie wykonuje `tools/call`, nie modyfikuje scen ani zasobów. W Unreal 5.8+ `tools/list` może zwrócić wyłącznie narzędzia wyszukiwania; lista nie musi obejmować wszystkich operacji edytora.
 
-[docs/contracts.md](docs/contracts.md), [contracts/api.json](contracts/api.json).
+## Instalacja i użycie
 
-## Zależności i kompatybilność
-
-[docs/compatibility.md](docs/compatibility.md), [docs/consumers.md](docs/consumers.md).
-
-## Walidacja szkieletu
+W środowisku Python 3.11+:
 
 ```bash
-python scripts/validate_repository.py --phase scaffold
-python scripts/validate_documentation.py
-python scripts/validate_pages.py
+python -m pip install -e .
+python -m lib_unreal --endpoint http://127.0.0.1:8000/mcp
 python -m unittest discover -s tests -v
 ```
 
-Zacznij od [TEMPLATE_SETUP.md](TEMPLATE_SETUP.md). GitHub Packages jest opcjonalnym kanałem zależnym od ekosystemu.
+W Unreal włącz **Unreal MCP** i właściwe **Toolsets**; lokalny endpoint konfiguruje się w ustawieniach edytora. Domyślny adres to `http://127.0.0.1:8000/mcp`. Dalsze informacje: [dokumentacja Epic](https://dev.epicgames.com/documentation/unreal-engine/unreal-mcp-in-unreal-editor).
 
-## Audyt i kontrole jakości
+## Bezpieczeństwo i status
 
-Zobacz [audyt szablonu z 2026-11-19](reviews/2026-11-19-template-audit.md) i plan działań P0–P2. Publiczne repozytoria mogą korzystać z GitHub-hosted runners. Szablon zawiera minimalny [workflow Scaffold CI](.github/workflows/ci.yml) z walidacją metadanych i testami regresyjnymi; nie buduje ani nie publikuje pakietów.
-
-## Architektura i bezpieczeństwo
-
-[Architektura](ARCHITECTURE.md), [ADR](docs/adr/README.md), [model zagrożeń](docs/security/threat-model.md), [łańcuch dostaw](docs/security/supply-chain.md), [zarządzanie](GOVERNANCE.md) i [limity dokumentacji](docs/documentation.md). Publiczna dokumentacja API korzysta tylko z `pages/` ([Pages](docs/pages.md)); `docs/` pozostaje wewnętrzne. [Wydania LIB](docs/releases.md) wymagają osobnej autoryzacji.
+Transport ogranicza się do loopback, blokuje przekierowania i ogranicza rozmiar odpowiedzi. MCP Unreal działa lokalnie bez uwierzytelnienia, dlatego nie należy wystawiać portu poza host. Testy sieciowe na rzeczywistym Unreal i operacje mutujące: **NOT_RUN**. [Kontrakt](contracts/api.json) · [Architektura](ARCHITECTURE.md) · [Licencja](LICENSE).

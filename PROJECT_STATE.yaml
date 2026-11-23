@@ -1,18 +1,18 @@
 schema_version: 1
 template_version: "1.0.0"
 repository_type: lib
-component_id: REPLACE_COMPONENT_ID
-programme: null
-owner: REPLACE_OWNER
-updated: null
-lifecycle: scaffold
+component_id: lib-unreal
+programme: research-autopilot
+owner: MatPomGit
+updated: 2026-11-21
+lifecycle: development
 evidence_status: not_run
-device_validation_status: not_applicable
+device_validation_status: not_run
 pages_status: not_configured
 release_status: not_released
 source_version: 0.1.0
-next_action: configure_component_and_run_scaffold_validator
+next_action: verify_discovery_on_real_editor
 blockers:
-  - replace_template_metadata
-  - run_local_tests
-  - confirm_license_and_publication_rights
+  - actual_editor_e2e_pending
+  - independent_review_pending
+  - release_gate_not_approved

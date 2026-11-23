@@ -1,9 +1,11 @@
-# Macierz zgodności
+# Zgodność
 
-Dokumentuj tylko testy **rzeczywiście wykonane**. Rozdziel `SUPPORTED`, `EXPERIMENTAL`, `UNSUPPORTED`, `NOT_RUN`.
+| Element | Stan |
+|---|---|
+| Python 3.11+ | target, testy offline w CI |
+| Unreal Engine 5.8+ | deklaracja dostawcy; E2E NOT_RUN |
+| MCP Streamable HTTP | klient rozwojowy, testy transportu wymagają rzeczywistego serwera |
+| Windows / Linux | target, brak zweryfikowanych instalacji |
+| MetaHuman, Blueprint mutation | NOT_IMPLEMENTED |
 
-| Środowisko | Wersja | Test / artefakt | Status |
-| --- | --- | --- | --- |
-| REPLACE_PLATFORM | REPLACE_VERSION | brak | NOT_RUN |
-
-Uwzględnij OS, runtime, urządzenie, GPU/CPU, Unity URP/HDRP, Web i Android, jeżeli dotyczą.
+Dokumentacja: https://dev.epicgames.com/documentation/unreal-engine/unreal-mcp-in-unreal-editor
